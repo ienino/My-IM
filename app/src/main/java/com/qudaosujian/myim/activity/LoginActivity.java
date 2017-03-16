@@ -3,6 +3,8 @@ package com.qudaosujian.myim.activity;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
@@ -32,7 +34,14 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.netease.nimlib.sdk.NIMClient;
+import com.netease.nimlib.sdk.RequestCallback;
+import com.netease.nimlib.sdk.auth.AuthService;
+import com.netease.nimlib.sdk.auth.LoginInfo;
 import com.qudaosujian.myim.R;
+import com.qudaosujian.myim.util.MD5;
+import com.qudaosujian.myim.util.Preferences;
+import com.qudaosujian.myim.util.T;
 
 import static android.Manifest.permission.READ_CONTACTS;
 
@@ -335,11 +344,61 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             showProgress(false);
 
             if (success) {
-                MainActivity.startActivity(LoginActivity.this,MainActivity.class);
+                LoginInfo info = new LoginInfo(mEmailView.getText().toString(),tokenFromPassword(mPasswordView.getText().toString())); // config...
+
+                RequestCallback<LoginInfo> callback =
+                new RequestCallback<LoginInfo>() {
+                    @Override
+                    public void onSuccess(LoginInfo param) {
+                        //登录成功
+                        T.showShort("登录成功："+param.getAccount());
+                        Preferences.saveUserAccount(param.getAccount());
+                        Preferences.saveUserToken(param.getToken());
+                        MainActivity.startActivity(LoginActivity.this,SingleChatActivity.class);
+                    }
+
+                    @Override
+                    public void onFailed(int code) {
+                        //失败
+                        T.showShort("登录失败：code="+code);
+                    }
+
+                    @Override
+                    public void onException(Throwable exception) {
+                        //异常
+                    }
+                    // 可以在此保存LoginInfo到本地，下次启动APP做自动登录用
+
+                };
+                NIMClient.getService(AuthService.class).login(info)
+                .setCallback(callback);
+
             } else {
                 mPasswordView.setError(getString(R.string.error_incorrect_password));
                 mPasswordView.requestFocus();
             }
+        }
+
+        //DEMO中使用 username 作为 NIM 的account ，md5(password) 作为 token
+        //开发者需要根据自己的实际情况配置自身用户系统和 NIM 用户系统的关系
+        private String tokenFromPassword(String password) {
+            String appKey = readAppKey(LoginActivity.this);
+            boolean isDemo = "45c6af3c98409b18a84451215d0bdd6e".equals(appKey)
+                    || "fe416640c8e8a72734219e1847ad2547".equals(appKey);
+
+            return isDemo ? MD5.getStringMD5(password) : password;
+        }
+
+        private  String readAppKey(Context context) {
+            try {
+                ApplicationInfo appInfo = context.getPackageManager().getApplicationInfo(context.getPackageName(), PackageManager.GET_META_DATA);
+                if (appInfo != null) {
+                    return appInfo.metaData.getString("com.netease.nim.appKey");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
         }
 
         @Override
