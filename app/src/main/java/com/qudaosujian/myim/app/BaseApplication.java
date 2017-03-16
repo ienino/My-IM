@@ -8,15 +8,21 @@ import android.graphics.Color;
 import android.os.Environment;
 import android.support.multidex.MultiDexApplication;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.netease.nimlib.sdk.NIMClient;
+import com.netease.nimlib.sdk.Observer;
 import com.netease.nimlib.sdk.SDKOptions;
 import com.netease.nimlib.sdk.StatusBarNotificationConfig;
+import com.netease.nimlib.sdk.StatusCode;
+import com.netease.nimlib.sdk.auth.AuthServiceObserver;
 import com.netease.nimlib.sdk.auth.LoginInfo;
 import com.netease.nimlib.sdk.msg.constant.SessionTypeEnum;
 import com.netease.nimlib.sdk.uinfo.UserInfoProvider;
 import com.qudaosujian.myim.R;
 import com.qudaosujian.myim.activity.WelcomeActivity;
+import com.qudaosujian.myim.util.DemoCache;
+import com.qudaosujian.myim.util.Preferences;
 
 /**
  * Created by ienin on 2017/3/15.
@@ -32,15 +38,20 @@ public class BaseApplication extends MultiDexApplication implements Thread.Uncau
 
     public void onCreate() {
         mInstance = this;
+        DemoCache.setContext(this);
         //网易云信-
         // SDK初始化（启动后台服务，若已经存在用户登录信息， SDK 将完成自动登录）
         NIMClient.init(this, loginInfo(), options());
         // ... your codes
-        if (inMainProcess(this)) {
-            // 注意：以下操作必须在主进程中进行
-            // 1、UI相关初始化操作
-            // 2、相关Service调用
-        }
+//        NIMClient.getService(AuthServiceObserver.class).observeOnlineStatus(
+//                new Observer<StatusCode>() {
+//                    public void onEvent(StatusCode status) {
+//                        Log.i("tag", "User status changed to: " + status);
+//                        if (status.wontAutoLogin()) {
+//                            // 被踢出、账号被禁用、密码错误等情况，自动登录失败，需要返回到登录界面进行重新登录操作
+//                        }
+//                    }
+//                }, true);
         //-网易云信
     }
 
@@ -107,9 +118,16 @@ public class BaseApplication extends MultiDexApplication implements Thread.Uncau
 
     // 如果已经存在用户登录信息，返回LoginInfo，否则返回null即可
     private LoginInfo loginInfo() {
-        return null;
-    }
+        String account = Preferences.getUserAccount();
+        String token = Preferences.getUserToken();
 
+        if (!TextUtils.isEmpty(account) && !TextUtils.isEmpty(token)) {
+            DemoCache.setAccount(account.toLowerCase());
+            return new LoginInfo(account, token);
+        } else {
+            return null;
+        }
+    }
 // 网易云信线程判断-
 // 除了 NIMClient.init 接口外，其他 SDK 暴露的接口都只能在 UI 进程调用。如果 APP 包含远程 service，
 // 该 APP 的 Application 的 onCreate 会多次调用。因此，如果需要在 onCreate 中调用除 init 接口外的其他

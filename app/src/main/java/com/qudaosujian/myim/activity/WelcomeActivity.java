@@ -9,6 +9,7 @@ import android.view.Window;
 import android.view.WindowManager;
 
 import com.qudaosujian.myim.R;
+import com.qudaosujian.myim.util.Preferences;
 
 public class WelcomeActivity extends Activity {
 

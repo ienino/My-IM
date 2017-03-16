@@ -3,6 +3,7 @@ package com.qudaosujian.myim.activity;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -39,6 +40,8 @@ import com.netease.nimlib.sdk.RequestCallback;
 import com.netease.nimlib.sdk.auth.AuthService;
 import com.netease.nimlib.sdk.auth.LoginInfo;
 import com.qudaosujian.myim.R;
+import com.qudaosujian.myim.app.BaseApplication;
+import com.qudaosujian.myim.util.DemoCache;
 import com.qudaosujian.myim.util.MD5;
 import com.qudaosujian.myim.util.Preferences;
 import com.qudaosujian.myim.util.T;
@@ -76,6 +79,9 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (Preferences.getUserToken() != null) {
+            LoginActivity.Login(Preferences.getUserAccount(), Preferences.getUserToken(), LoginActivity.this);
+        }
         setContentView(R.layout.activity_login);
         // Set up the login form.
         mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
@@ -182,10 +188,10 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             mEmailView.setError(getString(R.string.error_field_required));
             focusView = mEmailView;
             cancel = true;
-        } else if (!isEmailValid(email)) {
-            mEmailView.setError(getString(R.string.error_invalid_email));
-            focusView = mEmailView;
-            cancel = true;
+//        } else if (!isEmailValid(email)) {
+//            mEmailView.setError(getString(R.string.error_invalid_email));
+//            focusView = mEmailView;
+//            cancel = true;
         }
 
         if (cancel) {
@@ -344,35 +350,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             showProgress(false);
 
             if (success) {
-                LoginInfo info = new LoginInfo(mEmailView.getText().toString(),tokenFromPassword(mPasswordView.getText().toString())); // config...
-
-                RequestCallback<LoginInfo> callback =
-                new RequestCallback<LoginInfo>() {
-                    @Override
-                    public void onSuccess(LoginInfo param) {
-                        //登录成功
-                        T.showShort("登录成功："+param.getAccount());
-                        Preferences.saveUserAccount(param.getAccount());
-                        Preferences.saveUserToken(param.getToken());
-                        MainActivity.startActivity(LoginActivity.this,SingleChatActivity.class);
-                    }
-
-                    @Override
-                    public void onFailed(int code) {
-                        //失败
-                        T.showShort("登录失败：code="+code);
-                    }
-
-                    @Override
-                    public void onException(Throwable exception) {
-                        //异常
-                    }
-                    // 可以在此保存LoginInfo到本地，下次启动APP做自动登录用
-
-                };
-                NIMClient.getService(AuthService.class).login(info)
-                .setCallback(callback);
-
+                Login(mEmailView.getText().toString(), tokenFromPassword(mPasswordView.getText().toString()), LoginActivity.this);// config...
             } else {
                 mPasswordView.setError(getString(R.string.error_incorrect_password));
                 mPasswordView.requestFocus();
@@ -389,7 +367,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             return isDemo ? MD5.getStringMD5(password) : password;
         }
 
-        private  String readAppKey(Context context) {
+        private String readAppKey(Context context) {
             try {
                 ApplicationInfo appInfo = context.getPackageManager().getApplicationInfo(context.getPackageName(), PackageManager.GET_META_DATA);
                 if (appInfo != null) {
@@ -406,6 +384,38 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             mAuthTask = null;
             showProgress(false);
         }
+    }
+
+    public static void Login(String Account, String Token, final Context context) {
+        LoginInfo info = new LoginInfo(Account, Token);
+        RequestCallback<LoginInfo> callback =
+                new RequestCallback<LoginInfo>() {
+                    @Override
+                    public void onSuccess(LoginInfo param) {
+                        //登录成功
+                        T.showShort("登录成功：" + param.getAccount());
+                        if (Preferences.getUserToken() == null) {
+                            Preferences.saveUserAccount(param.getAccount());
+                            Preferences.saveUserToken(param.getToken());
+                        }
+                        MainActivity.startActivity(context, SingleChatActivity.class);
+                    }
+
+                    @Override
+                    public void onFailed(int code) {
+                        //失败
+                        T.showShort("登录失败：code=" + code);
+                    }
+
+                    @Override
+                    public void onException(Throwable exception) {
+                        //异常
+                    }
+                    // 可以在此保存LoginInfo到本地，下次启动APP做自动登录用
+
+                };
+        NIMClient.getService(AuthService.class).login(info)
+                .setCallback(callback);
     }
 }
 
