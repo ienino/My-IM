@@ -80,6 +80,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (Preferences.getUserToken() != null) {
+            LoginActivity.this.finish();
             LoginActivity.Login(Preferences.getUserAccount(), Preferences.getUserToken(), LoginActivity.this);
         }
         setContentView(R.layout.activity_login);
@@ -386,7 +387,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         }
     }
 
-    public static void Login(String Account, String Token, final Context context) {
+    public static void Login(String Account, String Token, final Activity activity) {
         LoginInfo info = new LoginInfo(Account, Token);
         RequestCallback<LoginInfo> callback =
                 new RequestCallback<LoginInfo>() {
@@ -398,7 +399,8 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                             Preferences.saveUserAccount(param.getAccount());
                             Preferences.saveUserToken(param.getToken());
                         }
-                        MainActivity.startActivity(context, SingleChatActivity.class);
+                        MainActivity.startActivity(activity, SingleChatActivity.class);
+                        activity.finish();
                     }
 
                     @Override
