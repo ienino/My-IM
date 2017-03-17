@@ -9,9 +9,27 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.qudaosujian.myim.activity.MainActivity">
+    <com.qudaosujian.myim.view.refresh.MaterialRefreshLayout xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/contacts_refresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:overlay="true"
+        app:progress_colors="@array/material_colors"
+        app:progress_size_type="normal"
+        app:wave_height_type="normal"
+        app:wave_show="false">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Hello World!" />
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/contacts_recyclerview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fadingEdge="none"
+            android:scrollbarStyle="outsideOverlay"
+            android:scrollingCache="false"
+            android:smoothScrollbar="true"
+            android:stackFromBottom="true">
+
+        </android.support.v7.widget.RecyclerView>
+
+    </com.qudaosujian.myim.view.refresh.MaterialRefreshLayout>
 </RelativeLayout>
